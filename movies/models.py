@@ -30,3 +30,12 @@ class MovieRequest(models.Model):
 
     def __str__(self):
         return str(self.id) + ' - ' + self.name
+
+class MovieRequestVote(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    request = models.ForeignKey(MovieRequest, on_delete=models.CASCADE, related_name='votes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'request')

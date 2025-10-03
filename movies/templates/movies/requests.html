@@ -21,15 +21,16 @@
           </div>
         </form>
 
-        <h2 class="mt-4">My Requests</h2>
+        <h2 class="mt-4">All Requests</h2>
         <hr />
-        <table class="table table-bordered table-striped text-center">
+        <table class="table table-bordered table-striped text-center align-middle">
           <thead>
             <tr>
               <th scope="col">ID</th>
               <th scope="col">Name</th>
               <th scope="col">Description</th>
               <th scope="col">Created</th>
+              <th scope="col">Votes</th>
               <th scope="col">Actions</th>
             </tr>
           </thead>
@@ -41,12 +42,28 @@
               <td class="text-start">{{ req.description }}</td>
               <td>{{ req.created_at }}</td>
               <td>
+                <span class="badge bg-secondary">{{ req.vote_count }}</span>
+              </td>
+              <td>
+                {% if req.user_has_voted %}
+                <form method="POST" action="{% url 'movies.requests.vote' id=req.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-secondary">Unvote</button>
+                </form>
+                {% else %}
+                <form method="POST" action="{% url 'movies.requests.vote' id=req.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-success">Vote</button>
+                </form>
+                {% endif %}
+                {% if req.user_id == user.id %}
                 <a class="btn btn-danger" href="{% url 'movies.requests.delete' id=req.id %}">Delete</a>
+                {% endif %}
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="5">No requests yet.</td>
+              <td colspan="6">No requests yet.</td>
             </tr>
             {% endfor %}
           </tbody>

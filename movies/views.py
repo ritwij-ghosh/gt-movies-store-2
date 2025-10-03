@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Movie, Review, MovieRequest
+from django.db.models import Count, Exists, OuterRef
+from .models import Movie, Review, MovieRequest, MovieRequestVote
 from django.contrib.auth.decorators import login_required
 
 def index(request):
@@ -73,11 +74,32 @@ def movie_requests(request):
 
     template_data = {}
     template_data['title'] = 'Movie Requests'
-    template_data['requests'] = MovieRequest.objects.filter(user=request.user).order_by('-created_at')
+    # Annotate with vote counts and whether current user has voted
+    user_vote_subquery = MovieRequestVote.objects.filter(request=OuterRef('pk'), user=request.user)
+    template_data['requests'] = (
+        MovieRequest.objects
+        .all()
+        .annotate(vote_count=Count('votes'))
+        .annotate(user_has_voted=Exists(user_vote_subquery))
+        .order_by('-created_at')
+    )
     return render(request, 'movies/requests.html', {'template_data': template_data})
 
 @login_required
 def delete_movie_request(request, id):
     movie_request = get_object_or_404(MovieRequest, id=id, user=request.user)
     movie_request.delete()
+    return redirect('movies.requests')
+
+@login_required
+def vote_movie_request(request, id):
+    if request.method != 'POST':
+        return redirect('movies.requests')
+
+    movie_request = get_object_or_404(MovieRequest, id=id)
+    existing_vote = MovieRequestVote.objects.filter(request=movie_request, user=request.user)
+    if existing_vote.exists():
+        existing_vote.delete()
+    else:
+        MovieRequestVote.objects.create(request=movie_request, user=request.user)
     return redirect('movies.requests')
